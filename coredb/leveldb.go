@@ -151,8 +151,9 @@ func (bi *levelDbBlockHeaderIndex) ReadBlock() (*blkchain.Block, error) {
 		return nil, fmt.Errorf("Opening file %v: %v", path, err)
 	}
 	defer f.Close()
-
 	pos := int64(ibh.DataPos) - 8 // magic + size = 8
+	// todo test real block
+	fmt.Sprintf("got block %d index , file number blk%05d.dat, dataPos %d", ibh.Height, int(ibh.FileN), pos)
 	if _, err := f.Seek(pos, 0); err != nil {
 		return nil, fmt.Errorf("Seeking to pos %d in file %v: %v", pos, path, err)
 	}

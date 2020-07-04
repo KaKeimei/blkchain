@@ -19,58 +19,65 @@ import (
 
 func main() {
 
-	connStr := flag.String("connstr", "host=/var/run/postgresql dbname=blocks sslmode=disable", "Db connection string")
-	nodeAddr := flag.String("nodeaddr", "", "Bitcoin node address")
-	nodeTmout := flag.Int("nodetmout", 30, "Bitcoin node timeout in seconds")
+	//connStr := flag.String("connstr", "host=/var/run/postgresql dbname=blocks sslmode=disable", "Db connection string")
+	//nodeAddr := flag.String("nodeaddr", "", "Bitcoin node address")
+	//nodeTmout := flag.Int("nodetmout", 30, "Bitcoin node timeout in seconds")
 	blocksPath := flag.String("blocks", "", "/path/to/blocks")
 	indexPath := flag.String("index", "", "/path/to/blocks/index (levelDb)")
-	chainStatePath := flag.String("chainstate", "", "/path/to/blocks/chainstate (levelDb UTXO set)")
-	testNet := flag.Bool("testnet", false, "Use testnet magic")
-	cacheSize := flag.Int("cache-size", 1024*1024*30, "Tx hashes to cache for pervout_tx_id")
-	wait := flag.Bool("wait", false, "Keep on waiting for blocks from Bitcoin node")
+	//chainStatePath := flag.String("chainstate", "", "/path/to/blocks/chainstate (levelDb UTXO set)")
+	//testNet := flag.Bool("testnet", false, "Use testnet magic")
+	//cacheSize := flag.Int("cache-size", 1024*1024*30, "Tx hashes to cache for pervout_tx_id")
+	//wait := flag.Bool("wait", false, "Keep on waiting for blocks from Bitcoin node")
 
 	flag.Parse()
 
-	if *blocksPath == "" && *nodeAddr == "" {
-		log.Fatalf("-blocks or -nodeAddr required.")
+	if *blocksPath == "" {
+		log.Fatalf("-blocks required.")
 	}
 
-	if *blocksPath != "" && *nodeAddr != "" {
-		log.Fatalf("-blocks and -nodeAddr are mutually exclusive")
+	if *indexPath == "" {
+		log.Fatalf("-index required.")
 	}
-
-	if *wait && *nodeAddr == "" {
-		log.Fatalf("wait can only be specified with nodeAddr")
-	}
+	//
+	//if *blocksPath != "" && *nodeAddr != "" {
+	//	log.Fatalf("-blocks and -nodeAddr are mutually exclusive")
+	//}
+	//
+	//if *wait && *nodeAddr == "" {
+	//	log.Fatalf("wait can only be specified with nodeAddr")
+	//}
 
 	if *indexPath == "" {
 		*indexPath = filepath.Join(*blocksPath, "index")
 	}
 
-	if *chainStatePath == "" {
-		*chainStatePath = filepath.Join(*blocksPath, "..", "chainstate")
-	}
+	//if *chainStatePath == "" {
+	//	*chainStatePath = filepath.Join(*blocksPath, "..", "chainstate")
+	//}
 
 	var magic uint32
-	if *testNet {
-		magic = blkchain.TestNetMagic
-	} else {
-		magic = blkchain.MainNetMagic
-	}
+	//if *testNet {
+	//	magic = blkchain.TestNetMagic
+	//} else {
+	//	magic = blkchain.MainNetMagic
+	//}
+	// todo test
+	magic = blkchain.MainNetMagic
 
-	if *nodeAddr != "" {
-		// Get blocks from a node
-		tmout := time.Duration(*nodeTmout) * time.Second
-		processEverythingBtcNode(*connStr, *nodeAddr, tmout, *cacheSize, *wait)
-
-	} else {
-		// Get block from levelDb
-		if err := setRLimit(1024); err != nil { // LevelDb opens many files!
-			log.Printf("Error setting rlimit: %v", err)
-			return
-		}
-		processEverythingLevelDb(*connStr, *blocksPath, *indexPath, *chainStatePath, magic, *cacheSize)
-	}
+	//if *nodeAddr != "" {
+	//	// Get blocks from a node
+	//	tmout := time.Duration(*nodeTmout) * time.Second
+	//	processEverythingBtcNode(*connStr, *nodeAddr, tmout, *cacheSize, *wait)
+	//
+	//} else {
+	//	// Get block from levelDb
+	//	if err := setRLimit(1024); err != nil { // LevelDb opens many files!
+	//		log.Printf("Error setting rlimit: %v", err)
+	//		return
+	//	}
+	//	processEverythingLevelDb(*connStr, *blocksPath, *indexPath, *chainStatePath, magic, *cacheSize)
+	//}
+	printBlockIndexInLevelDB(*blocksPath, *indexPath, magic)
 
 }
 
@@ -320,4 +327,30 @@ func setRLimit(required uint64) error {
 		}
 	}
 	return nil
+}
+
+// 读取600000开始的十个区块位置信息
+func printBlockIndexInLevelDB(blocksPath, indexPath string, magic uint32) {
+	// 读取全部区块头
+	startHeight := 600000
+	bhs, err := coredb.ReadLevelDbBlockHeaderIndex(indexPath, blocksPath, magic, startHeight)
+	if err != nil || bhs == nil {
+		log.Println("error while reading block headers...")
+		return
+	}
+	count := 0
+	for bhs.Next() && count < 10 {
+		bh := bhs.BlockHeader()
+
+		if bh == nil {
+			log.Printf("EOF: (Nil block header at %d).", bhs.CurrentHeight())
+			break
+		}
+		_, err := bhs.ReadBlock()
+		if err != nil {
+			log.Printf("Error: %v", err)
+			break
+		}
+		count++
+	}
 }
