@@ -1,6 +1,6 @@
 package db
 
-import "github.com/blkchain/blkchain"
+import "github.com/KaKeimei/blkchain"
 
 // These types reflect the database structure.
 

@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/blkchain/blkchain"
+	"github.com/KaKeimei/blkchain"
 )
 
 // We are avoiding defer Unlock() because rumors are it is slower than

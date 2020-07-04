@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/blkchain/blkchain"
-	"github.com/blkchain/blkchain/btcnode"
-	"github.com/blkchain/blkchain/coredb"
-	"github.com/blkchain/blkchain/db"
+	"github.com/KaKeimei/blkchain"
+	"github.com/KaKeimei/blkchain/btcnode"
+	"github.com/KaKeimei/blkchain/coredb"
+	"github.com/KaKeimei/blkchain/db"
 )
 
 func main() {

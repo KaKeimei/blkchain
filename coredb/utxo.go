@@ -3,7 +3,7 @@ package coredb
 import (
 	"io"
 
-	"github.com/blkchain/blkchain"
+	"github.com/KaKeimei/blkchain"
 	"github.com/btcsuite/btcd/btcec"
 )
 

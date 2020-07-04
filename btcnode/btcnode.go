@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/blkchain/blkchain"
+	"github.com/KaKeimei/blkchain"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"

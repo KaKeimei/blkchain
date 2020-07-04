@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blkchain/blkchain"
+	"github.com/KaKeimei/blkchain"
 	"github.com/lib/pq"
 )
 

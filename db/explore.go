@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/blkchain/blkchain"
+	"github.com/KaKeimei/blkchain"
 	"github.com/jmoiron/sqlx"
 )
 
