@@ -100,7 +100,7 @@ func readPartialDataFromS3() error {
 	obj, err := client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String("metasv-poc"),
 		Key:    aws.String("blk01217.dat"),
-		// read 10000 bytes
+		// read bytes, 可以大于区块本身的长度，但是不能小于
 		Range: aws.String("bytes=100275387-100872084"),
 	})
 	if err != nil {
