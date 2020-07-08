@@ -1,12 +1,13 @@
 package main
 
 import (
-	"flag"
+	"bufio"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -15,29 +16,34 @@ import (
 	"github.com/KaKeimei/blkchain/btcnode"
 	"github.com/KaKeimei/blkchain/coredb"
 	"github.com/KaKeimei/blkchain/db"
+	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 func main() {
 
+	err := readPartialDataFromS3()
+	if err != nil {
+		log.Println(err)
+	}
 	//connStr := flag.String("connstr", "host=/var/run/postgresql dbname=blocks sslmode=disable", "Db connection string")
 	//nodeAddr := flag.String("nodeaddr", "", "Bitcoin node address")
 	//nodeTmout := flag.Int("nodetmout", 30, "Bitcoin node timeout in seconds")
-	blocksPath := flag.String("blocks", "", "/path/to/blocks")
-	indexPath := flag.String("index", "", "/path/to/blocks/index (levelDb)")
+	//blocksPath := flag.String("blocks", "", "/path/to/blocks")
+	//indexPath := flag.String("index", "", "/path/to/blocks/index (levelDb)")
 	//chainStatePath := flag.String("chainstate", "", "/path/to/blocks/chainstate (levelDb UTXO set)")
 	//testNet := flag.Bool("testnet", false, "Use testnet magic")
 	//cacheSize := flag.Int("cache-size", 1024*1024*30, "Tx hashes to cache for pervout_tx_id")
 	//wait := flag.Bool("wait", false, "Keep on waiting for blocks from Bitcoin node")
 
-	flag.Parse()
-
-	if *blocksPath == "" {
-		log.Fatalf("-blocks required.")
-	}
-
-	if *indexPath == "" {
-		log.Fatalf("-index required.")
-	}
+	//flag.Parse()
+	//
+	//if *blocksPath == "" {
+	//	log.Fatalf("-blocks required.")
+	//}
+	//
+	//if *indexPath == "" {
+	//	log.Fatalf("-index required.")
+	//}
 	//
 	//if *blocksPath != "" && *nodeAddr != "" {
 	//	log.Fatalf("-blocks and -nodeAddr are mutually exclusive")
@@ -47,22 +53,22 @@ func main() {
 	//	log.Fatalf("wait can only be specified with nodeAddr")
 	//}
 
-	if *indexPath == "" {
-		*indexPath = filepath.Join(*blocksPath, "index")
-	}
+	//if *indexPath == "" {
+	//	*indexPath = filepath.Join(*blocksPath, "index")
+	//}
 
 	//if *chainStatePath == "" {
 	//	*chainStatePath = filepath.Join(*blocksPath, "..", "chainstate")
 	//}
 
-	var magic uint32
+	//var magic uint32
 	//if *testNet {
 	//	magic = blkchain.TestNetMagic
 	//} else {
 	//	magic = blkchain.MainNetMagic
 	//}
 	// todo test
-	magic = blkchain.MainNetMagic
+	//magic = blkchain.MainNetMagic
 
 	//if *nodeAddr != "" {
 	//	// Get blocks from a node
@@ -77,8 +83,40 @@ func main() {
 	//	}
 	//	processEverythingLevelDb(*connStr, *blocksPath, *indexPath, *chainStatePath, magic, *cacheSize)
 	//}
-	printBlockIndexInLevelDB(*blocksPath, *indexPath, magic)
+	//printBlockIndexInLevelDB(*blocksPath, *indexPath, magic)
 
+}
+
+func readPartialDataFromS3() error {
+	// The session the S3 Downloader will use
+	before := time.Now()
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("ap-northeast-1")},
+	)
+
+	// Write the contents of S3 Object to the file
+	// Create S3 service client
+	client := s3.New(sess)
+	obj, err := client.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String("metasv-poc"),
+		Key:    aws.String("blk01217.dat"),
+		// read 10000 bytes
+		Range: aws.String("bytes=100275387-100872084"),
+	})
+	if err != nil {
+		log.Printf("client GetObject failed, err: %+v\n", err)
+		return err
+	}
+	bufReader := bufio.NewReader(obj.Body)
+	block := blkchain.Block{}
+	_ = blkchain.BinRead(&block, bufReader)
+	fmt.Println(block.Hash())
+	for i, tx := range block.Txs {
+		fmt.Printf("tx index %d , txid %s \n", i, tx.Hash())
+	}
+	after := time.Since(before)
+	fmt.Println(after)
+	return nil
 }
 
 func processEverythingBtcNode(dbconnect, addr string, tmout time.Duration, cacheSize int, wait bool) {
